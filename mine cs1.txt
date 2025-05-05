@@ -1,0 +1,163 @@
+Perfect! Since you're using Ubuntu and want **simple step-by-step commands** to use **Scapy and Wireshark** for **packet sniffing**, here’s your full guide:
+
+---
+
+## ✅ **STEP 1: Open Terminal**
+
+* Press `Ctrl + Alt + T` to open the terminal.
+
+---
+
+## 🔧 **STEP 2: Update Your System**
+
+Paste this into terminal:
+
+```bash
+sudo apt update
+```
+
+---
+
+## 🐍 **STEP 3: Install Python, Scapy, and Required Libraries**
+
+Paste these one by one:
+
+```bash
+sudo apt install python3-pip python3-dev libpcap0.8-dev -y
+sudo pip3 install scapy
+```
+
+---
+
+## 🧪 **STEP 4: Install Wireshark (GUI tool for analyzing packets)**
+
+```bash
+sudo apt install wireshark -y
+```
+
+If it asks about non-root user capturing packets, choose **Yes**.
+
+Then add your user to the Wireshark group:
+
+```bash
+sudo usermod -aG wireshark $USER
+```
+
+👉 **IMPORTANT:** Restart your system or log out and back in to apply this group change.
+
+---
+
+## 🐚 **STEP 5: Start Scapy (the Packet Sniffer)**
+
+Open terminal and type:
+
+```bash
+sudo scapy
+```
+
+This opens the Scapy interactive shell.
+
+---
+
+## 🎯 **STEP 6: Use Scapy to Sniff and Show Packets**
+
+### ✅ a. Show your interfaces:
+
+```python
+show_interfaces()
+```
+
+Note your active interface (like `"enp3s0"` or `"wlp2s0"`).
+
+---
+
+### ✅ b. Capture 5 live packets (any type):
+
+```python
+packets = sniff(count=5)
+packets.summary()
+```
+
+---
+
+### ✅ c. Capture only TCP packets (5 of them):
+
+```python
+packets = sniff(filter="tcp", count=5)
+packets.summary()
+```
+
+---
+
+### ✅ d. Capture from a specific interface:
+
+(Replace `enp3s0` with your actual interface name)
+
+```python
+packets = sniff(iface="enp3s0", count=5)
+packets.summary()
+```
+
+---
+
+### ✅ e. Live print packet summaries:
+
+```python
+sniff(prn=lambda pkt: pkt.summary(), count=5)
+```
+
+---
+
+## 💾 **STEP 7: Save Captured Packets to a `.pcap` File**
+
+```python
+wrpcap("mycapture.pcap", packets)
+```
+
+This saves your capture to a file named `mycapture.pcap`.
+
+---
+
+## 🧪 **STEP 8: Open `.pcap` in Wireshark**
+
+Exit Scapy with:
+
+```python
+exit()
+```
+
+Then open the `.pcap` file with:
+
+```bash
+wireshark mycapture.pcap
+```
+
+Now you can visually analyze the packets in Wireshark GUI.
+
+---
+
+## 📘 OPTIONAL: Use Python Script for Sniffing with Delay
+
+Create a Python file named `sniffer.py` with:
+
+```python
+from scapy.all import sniff
+import time
+
+def packet_callback(packet):
+    print(packet.summary())
+
+for i in range(5):
+    sniff(prn=packet_callback, count=1, store=0)
+    time.sleep(1)
+```
+
+Run it:
+
+```bash
+sudo python3 sniffer.py
+```
+
+---
+
+Would you like me to generate a **single text file or PDF** with all these steps neatly for printing or saving?
