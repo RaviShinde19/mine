@@ -1,0 +1,153 @@
+To implement the experiment on Ubuntu and analyze the effects of attacks such as DDoS, IP Spoofing, and DNS Attacks, here’s a step-by-step guide. I will also explain the Python code you provided in detail.
+
+### **Step-by-Step Guide:**
+
+#### **1. Set Up the Environment:**
+
+Before starting, ensure that you have Ubuntu and Python installed on your system. You will also need a text editor or IDE (like VSCode or Sublime Text) to write and run the Python code.
+
+* **Install Python**: Check if Python is installed by running:
+
+  ```bash
+  python3 --version
+  ```
+
+  If it’s not installed, install it with:
+
+  ```bash
+  sudo apt update
+  sudo apt install python3
+  ```
+
+* **Install Required Python Libraries**:
+  The script uses the `datetime` module (which is built-in) and `collections`. You don’t need to install anything extra for these.
+
+#### **2. Create the Log File:**
+
+You’ll simulate a network log, where requests are made from different IPs. You can create a log file with the content you provided (like `network.log`):
+
+* Open a terminal in Ubuntu and run:
+
+  ```bash
+  nano network.log
+  ```
+
+* Paste the network log content (like IP requests) into the file:
+
+  ```text
+  [2025-04-07 12:00:00] IP:198.51.100.1 REQUEST /index.html
+  [2025-04-07 12:00:01] IP:198.51.100.1 REQUEST /home
+  [2025-04-07 12:00:02] IP:198.51.100.1 REQUEST /about
+  ...
+  ```
+
+* Save and close the file (`CTRL + X`, then press `Y` and `Enter`).
+
+#### **3. Create the Python Script for DDoS Detection (ddos.py)**:
+
+Next, you’ll write the script to detect potential DDoS attacks.
+
+* Open a terminal in Ubuntu and run:
+
+  ```bash
+  nano ddos.py
+  ```
+
+* Paste the Python code that you provided in the question:
+
+  ```python
+  from collections import defaultdict
+  from datetime import datetime
+
+  log_file = "network.log"
+  request_threshold = 5
+  time_window = 5
+
+  def parse_log_line(line):
+      try:
+          time_str = line.split("]")[0].strip("[")
+          ip = line.split("IP:")[1].split()[0]
+          timestamp = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+          return ip, timestamp
+      except (IndexError, ValueError) as e:
+          print(f"Error parsing line: {line}, Error: {e}")
+          return None, None
+
+  ip_requests = defaultdict(list)
+
+  try:
+      with open(log_file, "r") as file:
+          for line in file:
+              ip, timestamp = parse_log_line(line)
+              if ip and timestamp:
+                  ip_requests[ip].append(timestamp)
+  except FileNotFoundError:
+      print(f"Error: The log file {log_file} was not found.")
+      exit(1)
+
+  print("\n=== DDoS Detection Report ===")
+  for ip, timestamps in ip_requests.items():
+      timestamps.sort()
+      for i in range(len(timestamps)):
+          window_start = timestamps[i]
+          count = 1
+          for j in range(i + 1, len(timestamps)):
+              if (timestamps[j] - window_start).total_seconds() <= time_window:
+                  count += 1
+              else:
+                  break
+          if count >= request_threshold:
+              print(f"Potential DDoS detected from IP: {ip} — {count} requests in {time_window} seconds")
+              break
+  print("=== End of Report ===")
+  ```
+
+#### **4. Explanation of the Code**:
+
+* **Imports**:
+
+  * `defaultdict`: A special dictionary from the `collections` module that automatically creates an empty list if a new key is accessed.
+  * `datetime`: Used to convert string timestamps into actual date-time objects for comparison.
+
+* **Configurations**:
+
+  * `log_file`: Path to the log file (i.e., `network.log`).
+  * `request_threshold`: This is the number of requests from the same IP within the time window (5 seconds) that will trigger a DDoS alert.
+  * `time_window`: The time window in seconds (5 seconds in this case).
+
+* **Function `parse_log_line`**:
+
+  * It splits each log line to extract the timestamp and the IP address.
+  * The timestamp is converted from string to `datetime` object to enable comparison.
+
+* **Main Logic**:
+
+  * The script reads the log file and stores requests by IP.
+  * It checks each IP's requests and counts how many requests happen within the specified time window.
+  * If the count exceeds the threshold (`request_threshold`), it prints a DDoS detection message.
+
+#### **5. Run the DDoS Script**:
+
+* In the terminal, run the script:
+
+  ```bash
+  python3 ddos.py
+  ```
+
+* The script will analyze the log file and output any IPs that appear to be attempting a DDoS attack based on the threshold and time window.
+
+#### **6. Analyze the Output**:
+
+* For example, if you run the script with the provided network log, the output might look like:
+
+  ```
+  === DDoS Detection Report ===
+  Potential DDoS detected from IP: 203.0.113.5 — 5 requests in 5 seconds
+  === End of Report ===
+  ```
+
+#### **7. For IP Spoofing and DNS Attacks**:
+
+You can similarly create scripts for IP spoofing and DNS attacks, but those will require more advanced network-level access and manipulation. You would use libraries like `scapy` to send spoofed packets or simulate DNS query flooding.
+
+Let me know if you'd like detailed steps for those attacks too!
